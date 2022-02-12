@@ -61,6 +61,7 @@ void updateKeyboard(key myKeys[], string guess, Color myCode[]){
         }
     }
 }
+
 void printKeyboard(key myKeys[]){
     printf("--------------------\n");
     for(int i = 0; i < 10; i++){
@@ -110,81 +111,91 @@ int main() {
     key myKeys[26];
     string alphabet = "QWERTYUIOPASDFGHJKLZXCVBNM";    
     string guess;
-    bool success = false;
-    int guess_count = 6;
+    bool success;
+    int guess_count;
+    string keepPlaying;
 
     //welcome message
     cout << endl << "-------------------------------------------" << endl;
     cout << welcomeMessage << endl;
+    
+    do{
+        success = false;
+        guess_count = 6;
+        //obtain a correct answer
+        std::srand(time(NULL));
+        int random = std::rand() % 1653 + 1;
+        int count = 1;
+        string answer;
 
-    //obtain a correct answer
-    std::srand(time(NULL));
-    int random = std::rand() % 1653 + 1;
-    int count = 1;
-    string answer;
+        ifstream MyReadFile("freq_word_list.txt");
+        while(getline (MyReadFile, answer) && random != count){
+            count++;
+        }
 
-    ifstream MyReadFile("freq_word_list.txt");
-    while(getline (MyReadFile, answer) && random != count){
-        count++;
-    }
+        MyReadFile.close();
 
-    MyReadFile.close();
+        for(int i = 0; i < 5; i++)
+            answer.at(i) = toupper(answer.at(i));
 
-    for(int i = 0; i < 5; i++)
-        answer.at(i) = toupper(answer.at(i));
+        //initialize keyboard
+        for (int i = 0; i < 26; i++){
+            myKeys[i].letter = alphabet[i];
+            myKeys[i].code = grey;
+        }
 
-    //initialize keyboard
-    for (int i = 0; i < 26; i++){
-        myKeys[i].letter = alphabet[i];
-        myKeys[i].code = grey;
-    }
+        //game
+        while(!success && guess_count > 0){
 
-    //game
-    while(!success && guess_count > 0){
-
-        //obtain valid guess
-        cout << "You have " << guess_count << " guesses left.\nPlease enter your guess: ";
-        cin >> guess; cout << endl << endl;
-
-        while(!isValid(guess)){
-            cout << "I don't know that word, please enter another: ";
+            //obtain valid guess
+            cout << "You have " << guess_count << " guesses left.\nPlease enter your guess: ";
             cin >> guess; cout << endl << endl;
+
+            while(!isValid(guess)){
+                cout << "I don't know that word, please enter another: ";
+                cin >> guess; cout << endl << endl;
+            }
+
+            //make guess uppercase
+            for(int i = 0; i < 5; i++) {
+                guess.at(i) = toupper(guess.at(i));
+            }
+
+            //evaluate guess and print encoded guess
+            evaluateGuess(answer, guess, myCode);
+
+            for(int i = 0; i < 5; i++){
+                if(myCode[i] == red)
+                    printf("\033[;31m%c\033[0m ", guess.at(i));
+                else if(myCode[i] == yellow)
+                    printf("\033[;33m%c\033[0m ", guess.at(i));
+                else
+                    printf("\033[;32m%c\033[0m ", guess.at(i));
+            }
+            cout << endl << endl;
+
+            updateKeyboard(myKeys, guess, myCode);
+            printKeyboard(myKeys);
+
+            cout << endl << endl;
+
+            //finish turn
+            if(guess == answer)
+                success = true;
+            guess_count--;
         }
 
-        //make guess uppercase
-        for(int i = 0; i < 5; i++) {
-            guess.at(i) = toupper(guess.at(i));
-        }
+        //end of game
+        if(success)
+            cout << "You are correct!\n\n";
+        else
+            cout << "Sorry, you're out of guesses. The answer was: " << answer << "\n\n";
+        
+        cout << "Another round? (yes/no)" << endl;
+        cin >> keepPlaying;
+        cout << endl;
 
-        //evaluate guess and print encoded guess
-        evaluateGuess(answer, guess, myCode);
-
-        for(int i = 0; i < 5; i++){
-            if(myCode[i] == red)
-                printf("\033[;31m%c\033[0m ", guess.at(i));
-            else if(myCode[i] == yellow)
-                printf("\033[;33m%c\033[0m ", guess.at(i));
-            else
-                printf("\033[;32m%c\033[0m ", guess.at(i));
-        }
-        cout << endl << endl;
-
-        updateKeyboard(myKeys, guess, myCode);
-        printKeyboard(myKeys);
-
-        cout << endl << endl;
-
-        //finish turn
-        if(guess == answer)
-            success = true;
-        guess_count--;
-    }
-
-    //end of game
-    if(success)
-        cout << "You are correct!\n\n";
-    else
-        cout << "Sorry, you're out of guesses. The answer was: " << answer << "\n\n";
+    } while(keepPlaying == "yes");
 
     return 0;
 }
